@@ -1,0 +1,101 @@
+version: '2.3'
+
+services:
+  conductor-server:
+    environment:
+      - CONFIG_PROP=config-yugabyte.properties
+    image: conductor:server
+    container_name: conductor-server
+    build:
+      context: ../
+      dockerfile: docker/server/Dockerfile
+    networks:
+      - internal
+    ports:
+      - 8080:8080
+    healthcheck:
+      test: [ "CMD", "curl","-I" ,"-XGET", "http://localhost:8080/health" ]
+      interval: 60s
+      timeout: 30s
+      retries: 12
+    links:
+      - elasticsearch:es
+      - redis:rs
+      - yugabyte:yb
+    depends_on:
+      elasticsearch:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      yugabyte:
+        condition: service_healthy
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
+  yugabyte:
+    hostname: yugabyte
+    image: yogendra/yugabyte:2.18.1.0-b84
+    command: bin/yugabyted start --ui=false --daemon=false --advertise_address=0.0.0.0 --base_dir /mnt/disk0
+    environment:
+      YSQL_PASSWORD: conductor
+      YSQL_USER: conductor
+      YSQL_DB: conductor
+    ports:
+    - '5433:5433'
+    networks:
+    - internal
+    volumes:
+    - ybdata-conductor:/mnt/disk0
+    healthcheck:
+      test: PGPASSWORD=conductor bin/ysqlsh -h yugabyte -U conductor -tAc 'select 1' -d conductor
+      interval: 2s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+
+  redis:
+    image: redis:6.2.3-alpine
+    volumes:
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - internal
+    ports:
+      - 6379:6379
+    healthcheck:
+      test: redis-cli ping &> /dev/null || exit 1
+      interval: 2s
+      timeout: 5s
+      retries: 20
+      start_period: 10s
+  elasticsearch:
+    image: elasticsearch:7.8.0
+    environment:
+      - "ES_JAVA_OPTS=-Xms512m -Xmx1024m"
+      - transport.host=0.0.0.0
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+    networks:
+      - internal
+    ports:
+      - 9200:9200
+      - 9300:9300
+    healthcheck:
+      test: curl -sSLf http://localhost:9200 &> /dev/null|| exit 1
+      interval: 2s
+      timeout: 5s
+      retries: 10
+      start_period: 5s
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "1k"
+        max-file: "3"
+
+volumes:
+  ybdata-conductor:
+    driver: local
+
+networks:
+  internal:
