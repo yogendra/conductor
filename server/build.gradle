@@ -19,16 +19,16 @@ dependencies {
 
     implementation project(':conductor-rest')
     implementation project(':conductor-core')
-    implementation project(':conductor-redis-persistence')
-    implementation project(':conductor-cassandra-persistence')
+    // implementation project(':conductor-redis-persistence')
+    // implementation project(':conductor-cassandra-persistence')
     implementation project(':conductor-es6-persistence')
     implementation project(':conductor-grpc-server')
-    implementation project(':conductor-redis-lock')
-    implementation project(':conductor-redis-concurrency-limit')
+    // implementation project(':conductor-redis-lock')
+    // implementation project(':conductor-redis-concurrency-limit')
     implementation project(':conductor-http-task')
     implementation project(':conductor-json-jq-task')
-    implementation project(':conductor-awss3-storage')
-    implementation project(':conductor-awssqs-event-queue')
+    // implementation project(':conductor-awss3-storage')
+    // implementation project(':conductor-awssqs-event-queue')
 
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
@@ -44,6 +44,8 @@ dependencies {
     implementation "org.springdoc:springdoc-openapi-ui:${revOpenapi}"
 
     runtimeOnly "org.glassfish.jaxb:jaxb-runtime:${revJAXB}"
+    runtimeOnly "com.netflix.conductor:conductor-postgres-persistence:3.13.8"
+    implementation 'com.yugabyte:jdbc-yugabytedb:42.3.0'
 
     testImplementation project(':conductor-rest')
     testImplementation project(':conductor-common')
